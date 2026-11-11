@@ -8,12 +8,11 @@ import re
 import flet as ft
 
 # ==========================================
-# 1. CONFIGURACIÓN Y BASE DE DATOS CON LOS 19 SERVICIOS
+# 1. CONFIGURACIÓN Y BASE DE DATOS
 # ==========================================
 DB_NAME = "diana_rua_spa.db"
-ADMIN_PASS = "diana2026"  # <-- Contraseña de la cuenta principal
+ADMIN_PASS = "diana2026"
 
-# Si ya tienes el link .ics de Google Calendar, puedes pegarlo aquí entre comillas:
 ICAL_URL_DEFAULT = ""
 
 SERVICIOS_INICIALES = [
@@ -108,17 +107,16 @@ def guardar_config(clave, valor):
     db_query("INSERT OR REPLACE INTO config (clave, valor) VALUES (?, ?)", (clave, valor), fetch=False)
 
 # ==========================================
-# 2. RELOJ AUTOMÁTICO (COLOMBIA GMT-5), PARSER Y GOOGLE CALENDAR
+# 2. UTILIDADES DE TIEMPO Y GOOGLE CALENDAR
 # ==========================================
-HORA_INICIO_GRID = 6    # 6:00 AM
-HORA_FIN_GRID = 24      # 12:00 AM (Medianoche)
-PX_POR_HORA = 62        # Altura en píxeles por cada hora
-ANCHO_COL_DIA = 152     # Ancho óptimo para móvil (deslizable) y PC
-ANCHO_COL_HORA = 62     # Ancho columna izquierda de horas
+HORA_INICIO_GRID = 6
+HORA_FIN_GRID = 24
+PX_POR_HORA = 68
+ANCHO_COL_DIA = 175  # Ampliado para mejor visibilidad en móviles
+ANCHO_COL_HORA = 65
 ALTO_TOTAL_GRID = (HORA_FIN_GRID - HORA_INICIO_GRID) * PX_POR_HORA
 
 def ahora_colombia():
-    """Devuelve la fecha y hora exacta actual en Colombia (UTC-5), incluso si el servidor está en otro país."""
     return datetime.now(timezone.utc) - timedelta(hours=5)
 
 def texto_hora_a_decimal(h_str, defecto=8.0):
@@ -153,11 +151,6 @@ def decimal_a_texto_hora(dec):
     return f"{h_12:02d}:{m:02d} {sufijo}"
 
 def actualizar_citas_completadas_por_tiempo():
-    """
-    Revisa todas las citas y ajusta automáticamente su estado según el reloj actual:
-    - Si no está Cancelada y su hora de finalización ya pasó, pasa a 'Completada'.
-    - Si se reprogramó hacia el futuro y estaba 'Completada', vuelve a 'Programada'.
-    """
     ahora = ahora_colombia()
     hoy_str = ahora.strftime("%Y-%m-%d")
     hora_actual_dec = ahora.hour + (ahora.minute / 60.0)
@@ -313,7 +306,7 @@ IOS_BG = "#FFF5F8"
 IOS_CARD = "#FFFFFF"
 LOGO_PINK = "#FFB6C1"
 IOS_PINK = "#D81B60"
-GCAL_PURPLE = "#9C41B6"  # Morado estilo Google Calendar de Diana
+GCAL_PURPLE = "#9C41B6"
 IOS_BLUE = "#007AFF"
 IOS_GRAY = "#8E8E93"
 IOS_GREEN = "#34C759"
@@ -411,7 +404,7 @@ def main(page: ft.Page):
         page.update()
 
     # ==========================================
-    # TARJETAS KPI DEL DASHBOARD (SOLO VISIBLES PARA ADMIN)
+    # TARJETAS KPI (OCULTAS HASTA ENTRAR EN MODO ADMIN)
     # ==========================================
     txt_kpi_total = ft.Text("0", size=20, weight="bold", color=IOS_DARK)
     txt_kpi_prog = ft.Text("0", size=20, weight="bold", color=IOS_BLUE)
@@ -444,7 +437,7 @@ def main(page: ft.Page):
     )
 
     # ==========================================
-    # BUSCADOR PÚBLICO DE CITAS POR NOMBRE
+    # BUSCADOR PÚBLICO DE CITAS
     # ==========================================
     contenedor_resultados_busqueda = ft.Column(spacing=8, visible=False)
 
@@ -525,7 +518,7 @@ def main(page: ft.Page):
     )
 
     # ==========================================
-    # SECCIÓN A: CUADRÍCULA GOOGLE CALENDAR (6:00 AM A 12:00 AM)
+    # SECCIÓN A: CALENDARIO SEMANAL AMPLIADO
     # ==========================================
     lbl_mes_anio = ft.Text(size=16, weight="bold", color=IOS_DARK)
     lbl_rango_semana = ft.Text(size=12, weight="bold", color=IOS_PINK)
@@ -553,7 +546,6 @@ def main(page: ft.Page):
         mostrar_formulario_cita(None, fecha_forzada=dia_elegido, hora_ini_forzada=h_ini_sug, hora_fin_forzada=h_fin_sug)
 
     def renderizar_cuadricula_google():
-        # Antes de dibujar, verificar automáticamente qué citas ya cumplieron su horario
         actualizar_citas_completadas_por_tiempo()
 
         f_sel = estado_app["fecha_seleccionada"]
@@ -592,7 +584,7 @@ def main(page: ft.Page):
         cabecera_dias_grid.controls.append(
             ft.Container(
                 width=ANCHO_COL_HORA,
-                height=62,
+                height=64,
                 bgcolor="#F9F0F4",
                 border_radius=10,
                 padding=4,
@@ -611,15 +603,15 @@ def main(page: ft.Page):
             cabecera_dias_grid.controls.append(
                 ft.Container(
                     width=ANCHO_COL_DIA,
-                    height=62,
+                    height=64,
                     bgcolor=IOS_DARK if es_hoy else "#F9F0F4",
                     border_radius=10,
-                    padding=4,
+                    padding=6,
                     on_click=lambda e, d=dia: click_en_celda_hora(d, 8),
                     content=ft.Column([
-                        ft.Text(DIAS_SEMANA_LD[i], size=11, weight="bold", color=LOGO_PINK if es_hoy else IOS_GRAY),
-                        ft.Text(str(dia.day), size=18, weight="bold", color="white" if es_hoy else IOS_DARK)
-                    ], alignment="center", horizontal_alignment="center", spacing=1)
+                        ft.Text(DIAS_SEMANA_LD[i], size=12, weight="bold", color=LOGO_PINK if es_hoy else IOS_GRAY),
+                        ft.Text(str(dia.day), size=19, weight="bold", color="white" if es_hoy else IOS_DARK)
+                    ], alignment="center", horizontal_alignment="center", spacing=2)
                 )
             )
 
@@ -675,7 +667,7 @@ def main(page: ft.Page):
                 dec_fin_vis = max(dec_ini_vis + 0.5, min(float(HORA_FIN_GRID), dec_fin))
 
                 top_px = int((dec_ini_vis - HORA_INICIO_GRID) * PX_POR_HORA)
-                alto_px = max(34, int((dec_fin_vis - dec_ini_vis) * PX_POR_HORA) - 2)
+                alto_px = max(36, int((dec_fin_vis - dec_ini_vis) * PX_POR_HORA) - 2)
 
                 if estado == "Cancelada":
                     color_bloque = IOS_RED
@@ -701,7 +693,7 @@ def main(page: ft.Page):
                     height=alto_px,
                     bgcolor=color_bloque,
                     border_radius=8,
-                    padding=5,
+                    padding=6,
                     opacity=opacidad,
                     on_click=(lambda e, datos=c: mostrar_formulario_cita(datos)) if estado_app["es_admin"] else None,
                     content=ft.Column([
@@ -769,17 +761,69 @@ def main(page: ft.Page):
     )
 
     # ==========================================
-    # MODAL DE SINCRONIZACIÓN CON GOOGLE CALENDAR
+    # MODALES (ADMIN, GOOGLE CALENDAR Y CITAS)
     # ==========================================
     panel_modal = ft.Container(visible=False, bgcolor=IOS_CARD, border_radius=20, padding=16, margin=10, expand=True)
 
-    def mostrar_modal_google_calendar(e=None):
-        if not estado_app["es_admin"]:
-            return
+    def abrir_panel_administracion(e=None):
+        """Al hacer clic en el logo, se despliega el menú flotante para Admin o cerrar sesión."""
         banner_aviso.visible = False
+        if estado_app["es_admin"]:
+            # Si ya es admin, mostrar opciones de cerrar sesión o sincronizar
+            def cerrar_sesion(ev):
+                estado_app["es_admin"] = False
+                actualizar_interfaz_permisos()
+                panel_modal.visible = False
+                vista_agenda.visible = True
+                mostrar_alerta("Sesión de administrador cerrada.", IOS_GRAY)
+
+            panel_modal.content = ft.Column([
+                ft.Row([
+                    ft.Text("⚙️ Panel de Administradora", size=18, weight="bold", color=IOS_DARK),
+                    boton_ios("Cerrar", IOS_BG, IOS_DARK, lambda ev: cerrar_login_modal(), ancho=75)
+                ], alignment="spaceBetween"),
+                ft.Text("Estás conectada como Administradora.", size=13, color=IOS_GRAY),
+                boton_ios("🔄 Sincronizar Google Calendar", GCAL_PURPLE, "white", lambda ev: mostrar_modal_google_calendar(), padding=12),
+                boton_ios("🚪 Cerrar Sesión de Admin", IOS_RED, "white", cerrar_sesion, padding=12)
+            ], spacing=12)
+        else:
+            # Si es clienta, pedir contraseña para entrar a modo Admin
+            inp_pass = ft.TextField(label="Contraseña de la cuenta principal", password=True, can_reveal_password=True, border_radius=12)
+
+            def verificar_login(ev):
+                if inp_pass.value.strip() == ADMIN_PASS:
+                    estado_app["es_admin"] = True
+                    panel_modal.visible = False
+                    vista_agenda.visible = True
+                    actualizar_interfaz_permisos()
+                    mostrar_alerta("¡Bienvenida Diana! Modo Administrador activado.", IOS_GREEN)
+                else:
+                    mostrar_alerta("Contraseña incorrecta. Intenta de nuevo.", IOS_RED)
+
+            panel_modal.content = ft.Column([
+                ft.Row([
+                    ft.Text("🔐 Acceso Cuenta Principal", size=18, weight="bold", color=IOS_DARK),
+                    boton_ios("Cerrar", IOS_BG, IOS_DARK, lambda ev: cerrar_login_modal(), ancho=75)
+                ], alignment="spaceBetween"),
+                ft.Text("Ingresa la clave para administrar citas y ver estadísticas.", size=12, color=IOS_GRAY),
+                inp_pass,
+                boton_ios("Ingresar al Panel de Control", IOS_DARK, "white", verificar_login, padding=12)
+            ], spacing=14)
+
+        vista_agenda.visible = False
+        vista_servicios.visible = False
+        panel_modal.visible = True
+        page.update()
+
+    def cerrar_login_modal():
+        panel_modal.visible = False
+        vista_agenda.visible = True
+        page.update()
+
+    def mostrar_modal_google_calendar(e=None):
         url_guardada = obtener_config("ical_url", ICAL_URL_DEFAULT)
         inp_ical = ft.TextField(
-            label="Dirección secreta o pública en formato iCal (.ics) de Google Calendar",
+            label="Dirección iCal (.ics) de Google Calendar",
             value=url_guardada,
             border_radius=12,
             hint_text="https://calendar.google.com/calendar/ical/.../basic.ics"
@@ -798,77 +842,18 @@ def main(page: ft.Page):
             else:
                 mostrar_alerta(msg, IOS_RED)
 
-        def cerrar_gcal(ev):
-            panel_modal.visible = False
-            vista_agenda.visible = True
-            page.update()
-
         panel_modal.content = ft.Column([
             ft.Row([
-                ft.Text("🔄 Conectar Google Calendar", size=18, weight="bold", color=IOS_DARK),
-                boton_ios("Cerrar", IOS_BG, IOS_DARK, cerrar_gcal, ancho=75)
+                ft.Text("🔄 Sincronizar Google Calendar", size=18, weight="bold", color=IOS_DARK),
+                boton_ios("Atrás", IOS_BG, IOS_DARK, abrir_panel_administracion, ancho=75)
             ], alignment="spaceBetween"),
-            ft.Text(
-                "1. En Google Calendar (PC), ve a 'Mis calendarios' -> 'Diana Machado' (⋮) -> 'Configuración y uso compartido'.\n"
-                "2. Baja hasta 'Integrar el calendario' y copia la 'Dirección secreta en formato iCal' (termina en .ics).\n"
-                "3. Pégala aquí abajo y toca Sincronizar:",
-                size=12, color=IOS_GRAY
-            ),
+            ft.Text("Pega tu enlace iCal para actualizar las citas:", size=12, color=IOS_GRAY),
             inp_ical,
-            boton_ios("🔄 Descargar y Sincronizar Citas Ahora", GCAL_PURPLE, "white", ejecutar_sincronizacion)
-        ], spacing=12, scroll="auto")
-
-        vista_agenda.visible = False
-        vista_servicios.visible = False
-        panel_modal.visible = True
+            boton_ios("🔄 Descargar y Sincronizar Ahora", GCAL_PURPLE, "white", ejecutar_sincronizacion, padding=12)
+        ], spacing=12)
         page.update()
 
-    # ==========================================
-    # MODAL DE LOGIN PARA ADMINISTRADOR
-    # ==========================================
-    def mostrar_modal_login(e=None):
-        banner_aviso.visible = False
-        if estado_app["es_admin"]:
-            estado_app["es_admin"] = False
-            actualizar_interfaz_permisos()
-            mostrar_alerta("Sesión de administrador cerrada. Ahora estás en Vista Pública.", IOS_GRAY)
-            return
-
-        inp_pass = ft.TextField(label="Contraseña de la cuenta principal", password=True, can_reveal_password=True, border_radius=12)
-
-        def verificar_login(ev):
-            if inp_pass.value.strip() == ADMIN_PASS:
-                estado_app["es_admin"] = True
-                panel_modal.visible = False
-                vista_agenda.visible = True
-                actualizar_interfaz_permisos()
-                mostrar_alerta("¡Bienvenida Diana! Modo Administrador activado.", IOS_GREEN)
-            else:
-                mostrar_alerta("Contraseña incorrecta. Intenta de nuevo.", IOS_RED)
-
-        def cerrar_login(ev):
-            panel_modal.visible = False
-            vista_agenda.visible = True
-            page.update()
-
-        panel_modal.content = ft.Column([
-            ft.Row([
-                ft.Text("🔐 Acceso Cuenta Principal", size=18, weight="bold", color=IOS_DARK),
-                boton_ios("Cerrar", IOS_BG, IOS_DARK, cerrar_login, ancho=75)
-            ], alignment="spaceBetween"),
-            ft.Text("Ingresa la clave de administradora para ver estadísticas, sincronizar Google Calendar, agendar o editar citas.", size=12, color=IOS_GRAY),
-            inp_pass,
-            boton_ios("Ingresar al Panel de Control", IOS_DARK, "white", verificar_login)
-        ], spacing=14)
-
-        vista_agenda.visible = False
-        vista_servicios.visible = False
-        panel_modal.visible = True
-        page.update()
-
-    # ==========================================
-    # FORMULARIO DE CITA ORGANIZADO EN 2 COLUMNAS LADO A LADO (SIN TANTO SCROLL)
-    # ==========================================
+    # Formulario de citas compacto y sin colapsar (2 columnas en PC, adaptable en móvil)
     def mostrar_formulario_cita(cita_existente=None, fecha_forzada=None, hora_ini_forzada=None, hora_fin_forzada=None):
         if not estado_app["es_admin"]:
             mostrar_alerta("Solo la administradora puede crear o modificar citas.")
@@ -878,10 +863,7 @@ def main(page: ft.Page):
         servicios = db_query("SELECT id, nombre, precio FROM servicios")
         es_edicion = cita_existente is not None
 
-        # El estado manual solo alterna entre 'Programada' (Activa) y 'Cancelada'.
-        # 'Completada' lo asigna el sistema automáticamente cuando pasa la hora de fin.
         estado_inicial = "Cancelada" if (es_edicion and cita_existente[5] == "Cancelada") else "Programada"
-
         estado_form = {
             "servicio_id": cita_existente[7] if (es_edicion and cita_existente[7]) else (servicios[0][0] if servicios else None),
             "estado": estado_inicial
@@ -900,16 +882,17 @@ def main(page: ft.Page):
 
         inp_clienta = ft.TextField(label="Nombre de la clienta", value=cita_existente[1] if es_edicion else "", border_radius=10, dense=True)
         inp_telefono = ft.TextField(label="Teléfono / WhatsApp", value=cita_existente[2] if es_edicion else "", border_radius=10, dense=True)
-        inp_notas = ft.TextField(label="Detalle del servicio (ej. manos semi Ruber y pies)", value=notas_val, border_radius=10, dense=True)
+        inp_notas = ft.TextField(label="Detalle del servicio (ej. manos semi Ruber)", value=notas_val, border_radius=10, dense=True)
         inp_fecha = ft.TextField(label="Fecha (AAAA-MM-DD)", value=fecha_inicial, border_radius=10, dense=True)
         inp_hora_ini = ft.TextField(label="Hora Inicio", value=h_ini_val, border_radius=10, dense=True)
-        inp_hora_fin = ft.TextField(label="Hora Fin (Auto-completa al terminar)", value=h_fin_val, border_radius=10, dense=True)
+        inp_hora_fin = ft.TextField(label="Hora Fin", value=h_fin_val, border_radius=10, dense=True)
 
+        # Burbujas uniformes para horarios rápidos
         fila_ini_rapidos = ft.Row(scroll="auto", spacing=4)
         for h_s in HORARIOS_RAPIDOS_INICIO:
             fila_ini_rapidos.controls.append(
                 ft.Container(
-                    padding=5, border_radius=6, bgcolor=IOS_BG,
+                    padding=6, border_radius=10, bgcolor=IOS_BG,
                     on_click=lambda e, h=h_s: asignar_ini(h),
                     content=ft.Text(h_s, size=10, weight="bold", color=IOS_DARK)
                 )
@@ -919,7 +902,7 @@ def main(page: ft.Page):
         for h_f in HORARIOS_RAPIDOS_FIN:
             fila_fin_rapidos.controls.append(
                 ft.Container(
-                    padding=5, border_radius=6, bgcolor=IOS_BG,
+                    padding=6, border_radius=10, bgcolor=IOS_BG,
                     on_click=lambda e, h=h_f: asignar_fin(h),
                     content=ft.Text(h_f, size=10, weight="bold", color=IOS_PINK)
                 )
@@ -933,8 +916,7 @@ def main(page: ft.Page):
             inp_hora_fin.value = h
             page.update()
 
-        # Catálogo en cuadrícula de 2 columnas a la derecha para no hacer scroll largo
-        grid_servicios_dos_col = ft.Column(spacing=6, height=235, scroll="auto")
+        grid_servicios_dos_col = ft.Column(spacing=6, height=230, scroll="auto")
 
         def render_chips_servicios():
             grid_servicios_dos_col.controls.clear()
@@ -966,14 +948,13 @@ def main(page: ft.Page):
             render_chips_servicios()
             page.update()
 
-        # Selector de estado simplificado (sin opción manual de Completada)
         fila_estados = ft.Row(spacing=8, visible=es_edicion)
 
         def render_chips_estado():
             fila_estados.controls.clear()
             opciones_est = [
-                ("Programada", "📅 Cita Activa (Se completa sola por hora)", IOS_BLUE),
-                ("Cancelada", "❌ Cancelar Cita", IOS_RED)
+                ("Programada", "📅 Cita Activa", IOS_BLUE),
+                ("Cancelada", "❌ Cancelar", IOS_RED)
             ]
             for valor_est, etiqueta_est, col_est in opciones_est:
                 sel = (estado_form["estado"] == valor_est)
@@ -997,7 +978,7 @@ def main(page: ft.Page):
                 mostrar_alerta("Escribe el nombre de la clienta")
                 return
             if not inp_hora_ini.value.strip() or not inp_fecha.value.strip():
-                mostrar_alerta("Verifica la fecha y la hora de inicio")
+                mostrar_alerta("Verifica la fecha y la hora")
                 return
 
             if es_edicion:
@@ -1007,7 +988,7 @@ def main(page: ft.Page):
                 """, (inp_clienta.value.strip(), inp_telefono.value.strip(), estado_form["servicio_id"],
                       inp_fecha.value.strip(), inp_hora_ini.value.strip(), inp_hora_fin.value.strip(),
                       estado_form["estado"], inp_notas.value.strip(), cita_existente[0]), fetch=False)
-                mostrar_alerta("Cita actualizada (el estado Completada se calcula automáticamente por horario)", IOS_GREEN)
+                mostrar_alerta("Cita actualizada correctamente", IOS_GREEN)
             else:
                 db_query("""
                     INSERT INTO citas (clienta, telefono, servicio_id, fecha, hora_inicio, hora_fin, estado, notas)
@@ -1015,7 +996,7 @@ def main(page: ft.Page):
                 """, (inp_clienta.value.strip(), inp_telefono.value.strip(), estado_form["servicio_id"],
                       inp_fecha.value.strip(), inp_hora_ini.value.strip(), inp_hora_fin.value.strip(),
                       inp_notas.value.strip()), fetch=False)
-                mostrar_alerta("Cita agendada en la cuadrícula", IOS_GREEN)
+                mostrar_alerta("Cita agendada con éxito", IOS_GREEN)
 
             try:
                 estado_app["fecha_seleccionada"] = datetime.strptime(inp_fecha.value.strip(), "%Y-%m-%d").date()
@@ -1033,7 +1014,7 @@ def main(page: ft.Page):
             renderizar_cuadricula_google()
             if inp_buscador_clienta.value.strip():
                 buscar_cita_por_nombre(None)
-            mostrar_alerta("Cita eliminada definitivamente", IOS_GRAY)
+            mostrar_alerta("Cita eliminada", IOS_GRAY)
 
         def cerrar_modal(e=None):
             panel_modal.visible = False
@@ -1043,70 +1024,56 @@ def main(page: ft.Page):
         render_chips_servicios()
         render_chips_estado()
 
-        # Columna Izquierda: Datos de la clienta, fechas y horas
         columna_izquierda_datos = ft.Container(
-            width=360,
-            padding=10,
-            border_radius=14,
+            width=340,
+            padding=8,
+            border_radius=12,
             bgcolor="#FDF8FA",
             content=ft.Column([
-                ft.Text("1. Datos y Horario de Atención", size=13, weight="bold", color=IOS_PINK),
-                ft.Row([
-                    ft.Container(inp_clienta, expand=True),
-                    ft.Container(inp_telefono, width=135)
-                ], spacing=6),
-                ft.Row([
-                    ft.Container(inp_fecha, expand=True),
-                    ft.Container(inp_hora_ini, expand=True),
-                    ft.Container(inp_hora_fin, expand=True)
-                ], spacing=6),
-                ft.Row([
-                    ft.Text("Inicio:", size=10, weight="bold", color=IOS_GRAY),
-                    ft.Container(fila_ini_rapidos, expand=True)
-                ], spacing=4),
-                ft.Row([
-                    ft.Text("Fin:", size=10, weight="bold", color=IOS_GRAY),
-                    ft.Container(fila_fin_rapidos, expand=True)
-                ], spacing=4),
+                ft.Text("1. Datos y Horario", size=12, weight="bold", color=IOS_PINK),
+                ft.Row([ft.Container(inp_clienta, expand=True), ft.Container(inp_telefono, width=125)], spacing=4),
+                ft.Row([ft.Container(inp_fecha, expand=True), ft.Container(inp_hora_ini, expand=True), ft.Container(inp_hora_fin, expand=True)], spacing=4),
+                ft.Text("Inicio rápido:", size=10, weight="bold", color=IOS_GRAY),
+                fila_ini_rapidos,
+                ft.Text("Fin rápido:", size=10, weight="bold", color=IOS_GRAY),
+                fila_fin_rapidos,
                 inp_notas,
                 fila_estados
-            ], spacing=8)
+            ], spacing=6)
         )
 
-        # Columna Derecha: Selección de servicios en 2 columnas al lado
         columna_derecha_servicios = ft.Container(
-            width=390,
-            padding=10,
-            border_radius=14,
+            width=360,
+            padding=8,
+            border_radius=12,
             bgcolor="#FDF8FA",
             content=ft.Column([
-                ft.Text("2. Servicio Base (Toca uno para seleccionar)", size=13, weight="bold", color=IOS_PINK),
+                ft.Text("2. Seleccionar Servicio Base", size=12, weight="bold", color=IOS_PINK),
                 grid_servicios_dos_col
             ], spacing=6)
         )
 
         panel_modal.content = ft.Column([
             ft.Row([
-                ft.Text("✏️ Editar Cita" if es_edicion else "➕ Agendar Nueva Cita", size=18, weight="bold", color=IOS_DARK),
+                ft.Text("✏️ Editar Cita" if es_edicion else "➕ Agendar Cita", size=18, weight="bold", color=IOS_DARK),
                 boton_ios("Cerrar", IOS_BG, IOS_DARK, cerrar_modal, ancho=75, padding=8)
             ], alignment="spaceBetween"),
-            # Disposición horizontal lado a lado (se adapta en móvil con wrap=True)
             ft.Row([
                 columna_izquierda_datos,
                 columna_derecha_servicios
-            ], spacing=12, wrap=True, vertical_alignment="start"),
+            ], spacing=10, wrap=True, vertical_alignment="start"),
             ft.Row([
-                boton_ios("🗑️ Eliminar Cita", "#FFE5E5", IOS_RED, eliminar, ancho=130, visible=es_edicion),
-                boton_ios("💾 Guardar Cambios" if es_edicion else "💾 Agendar Cita", IOS_DARK, "white", guardar, expandir=True)
-            ], spacing=10)
-        ], spacing=10, scroll="auto")
+                boton_ios("🗑️ Eliminar", "#FFE5E5", IOS_RED, eliminar, ancho=110, visible=es_edicion, padding=8),
+                boton_ios("💾 Guardar" if es_edicion else "💾 Agendar", IOS_DARK, "white", guardar, expandir=True, padding=8)
+            ], spacing=8)
+        ], spacing=8, scroll="auto")
 
         vista_agenda.visible = False
         panel_modal.visible = True
         page.update()
 
     # ==========================================
-    # SECCIÓN B: CATÁLOGO DE SERVICIOS Y PRECIOS
+    # SECCIÓN B: CATÁLOGO DE SERVICIOS
     # ==========================================
     lista_servicios_ui = ft.Column(spacing=10, scroll="auto", expand=True)
     inp_serv_nom = ft.TextField(label="Nombre del nuevo servicio", border_radius=12)
@@ -1173,27 +1140,23 @@ def main(page: ft.Page):
         page.update()
 
     # ==========================================
-    # ENCABEZADO SUPERIOR (ADAPTABLE A CELULAR Y PC)
+    # ENCABEZADO SUPERIOR: EL LOGO ABRE EL PANEL ADMIN
     # ==========================================
     logo_uri = obtener_logo_data_uri()
     if logo_uri:
         widget_logo = ft.Container(
-            width=52,
-            height=52,
-            border_radius=26,
+            width=54,
+            height=54,
+            border_radius=27,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            content=ft.Image(
-                src=logo_uri,
-                width=52,
-                height=52,
-            )
+            on_click=abrir_panel_administracion,
+            content=ft.Image(src=logo_uri, width=54, height=54)
         )
     else:
         widget_logo = ft.Container(
-            width=52, height=52, bgcolor=LOGO_PINK, border_radius=26,
-            content=ft.Column([
-                ft.Text("D", size=22, weight="bold", color=IOS_DARK),
-            ], alignment="center", horizontal_alignment="center", spacing=0)
+            width=54, height=54, bgcolor=LOGO_PINK, border_radius=27,
+            on_click=abrir_panel_administracion,
+            content=ft.Column([ft.Text("D", size=22, weight="bold", color=IOS_DARK)], alignment="center", horizontal_alignment="center")
         )
 
     badge_modo = ft.Container(
@@ -1211,29 +1174,22 @@ def main(page: ft.Page):
         ], spacing=3)
     ], spacing=10)
 
-    btn_sync_gcal = boton_ios("🔄 Google Cal", GCAL_PURPLE, "white", mostrar_modal_google_calendar, ancho=115, visible=False, padding=9)
     btn_nueva_cita = boton_ios("+ Cita", IOS_PINK, "white", lambda e: mostrar_formulario_cita(None), ancho=75, visible=False, padding=9)
-    btn_admin_toggle = boton_ios("🔐 Admin", IOS_DARK, "white", mostrar_modal_login, ancho=88, padding=9)
 
     barra_superior_fija = ft.Container(
         padding=10,
         content=ft.Row([
             encabezado_logo,
             ft.Row([
-                btn_sync_gcal,
-                btn_nueva_cita,
-                btn_admin_toggle
+                btn_nueva_cita
             ], spacing=6)
-        ], alignment="spaceBetween", wrap=True)
+        ], alignment="spaceBetween")
     )
 
     def actualizar_interfaz_permisos():
         es_adm = estado_app["es_admin"]
         btn_nueva_cita.visible = es_adm
-        btn_sync_gcal.visible = es_adm
         fila_kpis.visible = es_adm
-        btn_admin_toggle.content.controls[0].value = "🔓 Salir" if es_adm else "🔐 Admin"
-        btn_admin_toggle.bgcolor = IOS_RED if es_adm else IOS_DARK
         
         badge_modo.bgcolor = IOS_GREEN if es_adm else LOGO_PINK
         badge_modo.content.value = "✅ Modo Administradora" if es_adm else "👁️ Vista Pública (Clientas)"
@@ -1315,7 +1271,7 @@ def main(page: ft.Page):
     )
 
     # ==========================================
-    # FONDO DEGRADADO BLANCO-ROSADO CON NUBES
+    # FONDO DEGRADADO CON NUBES
     # ==========================================
     def crear_nube(ancho, alto, top=None, left=None, right=None, bottom=None, color="#88FFFFFF"):
         return ft.Container(
@@ -1373,7 +1329,7 @@ def main(page: ft.Page):
     renderizar_cuadricula_google()
 
 # ==========================================
-# 5. ARRANQUE OFICIAL PARA FLET 1.1+
+# 5. ARRANQUE OFICIAL
 # ==========================================
 if __name__ == "__main__":
     puerto = int(os.environ.get("PORT", 8550))
